@@ -6,11 +6,13 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { nombre, telefono, ciudad, lat, lng, variantId } = req.body;
+  const { nombre, telefono, ciudad, lat, lng, variantId, cantidad, descuento } = req.body;
+  const qty = Number(cantidad) || 1;
+  const notaDescuento = descuento > 0 ? ` | Descuento: -${descuento} Gs` : '';
 
   const payload = {
     order: {
-      line_items: [{ variant_id: Number(variantId), quantity: 1 }],
+      line_items: [{ variant_id: Number(variantId), quantity: qty }],
       shipping_address: {
         first_name: nombre,
         phone: '+595' + telefono,
@@ -20,7 +22,7 @@ export default async function handler(req, res) {
       },
       financial_status: 'pending',
       tags: 'COD, paga-en-casa',
-      note: `GPS: https://maps.google.com/?q=${lat},${lng}`,
+      note: `GPS: https://maps.google.com/?q=${lat},${lng}${notaDescuento}`,
       send_receipt: false,
       send_fulfillment_receipt: false
     }
@@ -39,7 +41,6 @@ export default async function handler(req, res) {
   );
 
   const data = await r.json();
-
   if (!r.ok) {
     console.error("Shopify error:", JSON.stringify(data));
     return res.status(500).json({ error: data.errors });
