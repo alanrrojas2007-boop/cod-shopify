@@ -8,15 +8,9 @@ export default async function handler(req, res) {
 
   const { nombre, telefono, ciudad, lat, lng, variantId } = req.body;
 
-  console.log("Datos recibidos:", JSON.stringify({ nombre, telefono, ciudad, lat, lng, variantId }));
-
   const payload = {
     order: {
       line_items: [{ variant_id: Number(variantId), quantity: 1 }],
-      customer: {
-        first_name: nombre,
-        phone: '+595' + telefono
-      },
       shipping_address: {
         first_name: nombre,
         phone: '+595' + telefono,
