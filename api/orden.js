@@ -8,6 +8,8 @@ export default async function handler(req, res) {
 
   const { nombre, telefono, ciudad, lat, lng, variantId } = req.body;
 
+  console.log("Datos recibidos:", JSON.stringify({ nombre, telefono, ciudad, lat, lng, variantId }));
+
   const payload = {
     order: {
       line_items: [{ variant_id: Number(variantId), quantity: 1 }],
@@ -43,7 +45,11 @@ export default async function handler(req, res) {
   );
 
   const data = await r.json();
-  if (!r.ok) return res.status(500).json({ error: data.errors });
+
+  if (!r.ok) {
+    console.error("Shopify error:", JSON.stringify(data));
+    return res.status(500).json({ error: data.errors });
+  }
 
   return res.status(200).json({ order_id: data.order.id, order_name: data.order.name });
 }
