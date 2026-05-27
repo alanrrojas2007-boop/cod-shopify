@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { nombre, telefono, ciudad, lat, lng, variantId, cantidad, descuento } = req.body;
+  const { nombre, telefono, ciudad, lat, lng, variantId, cantidad, descuento, producto, total } = req.body;
   const qty = Number(cantidad) || 1;
   const descTxt = descuento > 0 ? `\nDescuento aplicado: -${descuento} Gs` : '';
 
@@ -57,5 +57,25 @@ GPS: https://maps.google.com/?q=${lat},${lng}${descTxt}`;
     console.error('Shopify error:', JSON.stringify(data));
     return res.status(500).json({ error: data.errors });
   }
+
+  // Enviar a Google Sheets
+  try {
+    await fetch('https://script.google.com/macros/s/AKfycbydvf7_DkZrVX2XwvDf_uWHA9HU0ULTXe7z_ebPpQiuV9sRSzxERM-5gATqzODQ8K9L/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_name: data.order.name,
+        fecha: new Date().toLocaleString('es-PY'),
+        producto: producto || 'Producto',
+        total: total || '',
+        nombre: nombre,
+        telefono: '+595' + telefono,
+        ciudad: ciudad
+      })
+    });
+  } catch(e) {
+    console.error('Sheets error:', e);
+  }
+
   return res.status(200).json({ order_id: data.order.id, order_name: data.order.name });
 }
