@@ -58,24 +58,26 @@ GPS: https://maps.google.com/?q=${lat},${lng}${descTxt}`;
     return res.status(500).json({ error: data.errors });
   }
 
-  // Enviar a Google Sheets
-  try {
-    await fetch('https://script.google.com/macros/s/AKfycbyH27fNwHFaa0yl9KTmLPFryPUCrqydT9Q-rH3bh6ytsZdlZv5lAgQ3qA8Ma1TNq75c/exec', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        order_name: data.order.name,
-        fecha: new Date().toLocaleString('es-PY'),
-        producto: producto || 'Producto',
-        cantidad: qty,
-        total: total || '',
-        nombre: nombre,
-        telefono: '+595' + telefono,
-        ciudad: ciudad
-      })
-    });
-  } catch(e) {
-    console.error('Sheets error:', e);
+  // Google Sheets - solo si está configurado
+  if (process.env.SHEETS_URL) {
+    try {
+      await fetch(process.env.SHEETS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_name: data.order.name,
+          fecha: new Date().toLocaleString('es-PY'),
+          producto: producto || 'Producto',
+          cantidad: qty,
+          total: total || '',
+          nombre: nombre,
+          telefono: '+595' + telefono,
+          ciudad: ciudad
+        })
+      });
+    } catch(e) {
+      console.error('Sheets error:', e);
+    }
   }
 
   return res.status(200).json({ order_id: data.order.id, order_name: data.order.name });
