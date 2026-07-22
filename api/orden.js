@@ -2,38 +2,69 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { nombre, telefono, ciudad, lat, lng, variantId, cantidad, descuento, producto, total } = req.body;
+  const {
+    nombre,
+    telefono,
+    ciudad,
+    direccion,
+    referencia,
+    gps,
+    lat,
+    lng,
+    variantId,
+    cantidad,
+    descuento,
+    producto,
+    total
+  } = req.body;
+
   const qty = Number(cantidad) || 1;
-  const descTxt = descuento > 0 ? `\nDescuento aplicado: -${descuento} Gs` : '';
+  const telLimpio = String(telefono || '').replace(/\D/g, '');
+  const telSinCero = telLimpio.startsWith('0') ? telLimpio.slice(1) : telLimpio;
+  const telefonoFinal = telSinCero.startsWith('595') ? `+${telSinCero}` : `+595${telSinCero}`;
+
+  const gpsFinal = gps || `https://maps.google.com/?q=${lat},${lng}`;
+  const descTxt = Number(descuento) > 0 ? `\nDescuento aplicado: -${descuento} Gs` : '';
 
   const nota = `DATOS DEL CLIENTE
 Nombre: ${nombre}
-Telefono: +595${telefono}
+Telefono: ${telefonoFinal}
 Ciudad: ${ciudad}
-GPS: https://maps.google.com/?q=${lat},${lng}${descTxt}`;
+Direccion: ${direccion || 'Sin dirección'}
+Referencia: ${referencia || 'Sin referencia'}
+GPS: ${gpsFinal}${descTxt}`;
 
   const payload = {
     order: {
-      line_items: [{ variant_id: Number(variantId), quantity: qty }],
+      line_items: [
+        {
+          variant_id: Number(variantId),
+          quantity: qty
+        }
+      ],
       shipping_address: {
         first_name: nombre,
         last_name: '.',
-        phone: '+595' + telefono,
+        phone: telefonoFinal,
         city: ciudad,
-        address1: ciudad,
+        address1: direccion || ciudad,
+        address2: referencia || '',
         country_code: 'PY'
       },
       financial_status: 'pending',
       tags: 'COD, paga-en-casa',
       note: nota,
       note_attributes: [
-        { name: 'Nombre', value: nombre },
-        { name: 'Telefono', value: '+595' + telefono },
-        { name: 'Ciudad', value: ciudad },
-        { name: 'GPS', value: `https://maps.google.com/?q=${lat},${lng}` }
+        { name: 'Nombre', value: nombre || '' },
+        { name: 'Telefono', value: telefonoFinal },
+        { name: 'Ciudad', value: ciudad || '' },
+        { name: 'Direccion exacta', value: direccion || '' },
+        { name: 'Referencia', value: referencia || '' },
+        { name: 'GPS', value: gpsFinal }
       ],
       send_receipt: false,
       send_fulfillment_receipt: false
@@ -53,12 +84,12 @@ GPS: https://maps.google.com/?q=${lat},${lng}${descTxt}`;
   );
 
   const data = await r.json();
+
   if (!r.ok) {
     console.error('Shopify error:', JSON.stringify(data));
     return res.status(500).json({ error: data.errors });
   }
 
-  // Google Sheets - solo si está configurado
   if (process.env.SHEETS_URL) {
     try {
       await fetch(process.env.SHEETS_URL, {
@@ -70,15 +101,21 @@ GPS: https://maps.google.com/?q=${lat},${lng}${descTxt}`;
           producto: producto || 'Producto',
           cantidad: qty,
           total: total || '',
-          nombre: nombre,
-          telefono: '+595' + telefono,
-          ciudad: ciudad
+          nombre: nombre || '',
+          telefono: telefonoFinal,
+          ciudad: ciudad || '',
+          direccion: direccion || '',
+          referencia: referencia || '',
+          gps: gpsFinal
         })
       });
-    } catch(e) {
+    } catch (e) {
       console.error('Sheets error:', e);
     }
   }
 
-  return res.status(200).json({ order_id: data.order.id, order_name: data.order.name });
+  return res.status(200).json({
+    order_id: data.order.id,
+    order_name: data.order.name
+  });
 }
