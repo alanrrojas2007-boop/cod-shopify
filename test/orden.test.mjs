@@ -72,7 +72,8 @@ test('rechaza variantes ajenas al formulario', async () => {
   assert.equal(called, false);
 });
 
-test('conserva el código del producto anterior', async () => {
+for (const variantId of ['45391430910087', '45863304593543', '46075433255047', '46327007314055']) {
+test(`acepta la variante WEVV ${variantId}`, async () => {
   process.env.SHOPIFY_STORE = 'test-store';
   process.env.SHOPIFY_TOKEN = 'test-token';
   delete process.env.SHEETS_URL;
@@ -82,7 +83,8 @@ test('conserva el código del producto anterior', async () => {
     return { ok: true, json: async () => ({ order: { id: 8, name: '#8' } }) };
   };
   const res = response();
-  await handler({ method: 'POST', body: { variantId: '45391430910087', cantidad: 1 } }, res);
+  await handler({ method: 'POST', body: { variantId, cantidad: 1 } }, res);
   assert.equal(res.statusCode, 200);
-  assert.equal(order.discount_codes[0].code, 'WEVVPACK1');
+  assert.equal(order.discount_codes[0].code, 'WEVVPRO1');
 });
+}

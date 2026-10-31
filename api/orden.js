@@ -28,7 +28,12 @@ export default async function handler(req, res) {
   const qty = Number(cantidad);
   const packPrices = { 1: 229900, 2: 299900, 3: 389900 };
   const variant = String(variantId || '');
-  const allowedVariants = new Set(['45391430910087', '46327007314055']);
+  const allowedVariants = new Set([
+    '45391430910087', // WEVV Day & Night System
+    '45863304593543', // WEVV Day y Night System Pro
+    '46075433255047', // WEVV Day & Night System MAX
+    '46327007314055'  // WEVV Day & Night System pro max
+  ]);
   if (!Number.isInteger(qty) || !packPrices[qty] || !allowedVariants.has(variant)) {
     return res.status(400).json({ error: 'Pack o producto no válido' });
   }
@@ -65,7 +70,7 @@ ${gpsFinal ? `GPS: ${gpsFinal}\n` : ''}${packTxt}${colorTxt}${prioridadTxt}${des
         }
       ],
       discount_codes: [{
-        code: `${variant === '46327007314055' ? 'WEVVPRO' : 'WEVVPACK'}${qty}`,
+        code: `WEVVPRO${qty}`,
         amount: String(packDiscount),
         type: 'fixed_amount'
       }],
