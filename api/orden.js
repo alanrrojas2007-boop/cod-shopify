@@ -30,12 +30,13 @@ async function sendMetaPurchase(req, order, qty, variant, phone) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2500);
   try {
-    const response = await fetch('https://graph.facebook.com/v26.0/' + META_PIXEL_ID + '/events', {
+    const url = new URL('https://graph.facebook.com/v26.0/' + META_PIXEL_ID + '/events');
+    url.searchParams.set('access_token', process.env.META_CAPI_TOKEN);
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
-        access_token: process.env.META_CAPI_TOKEN,
         data: [{
           event_name: 'Purchase',
           event_time: Math.floor(Date.now() / 1000),
